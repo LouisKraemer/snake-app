@@ -1,0 +1,108 @@
+body {
+    background-image: url('background.jpg');
+    background-size: 100vw 100vh;
+}
+
+#gameArea {
+    position: fixed;
+    margin-left: calc(50vw - 250px);
+    height: 500px;
+    width: 500px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+
+.snake1 {
+    height: 10px;
+    width: 10px;
+    background-color: red;
+    position: absolute;
+}
+
+.snake2 {
+    height: 10px;
+    width: 10px;
+    background-color: black;
+    position: absolute;
+}
+
+.fruit {
+    height: 10px;
+    width: 10px;
+    background-color: green;
+    position: absolute;
+}
+
+#gameInfo {
+    margin: 10px;
+    width: 100px;
+    margin-left: calc(50vw - 50px);
+}
+
+#player1 {
+    margin-left: calc(15vw - 100px);
+    width: 200px;
+    position: absolute;
+}
+
+#player2 {
+    margin-left: calc(85vw - 100px);
+    width: 200px;
+    position: absolute;
+}
+
+.ready {
+    color: green;
+}
+
+.notReady {
+    color: red;
+}
+
+#readyButton {
+    border: none;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.4);
+    width: 100px;
+    border-radius: 5px;
+    color: white;
+    transition-duration: 500ms;
+}
+
+#readyButton:hover {
+    box-shadow: 0 7px 9px 0 rgba(0,0,0,0.24);
+    transition-duration: 500ms;
+}
+
+#usernameBox {
+    width: 86px;
+    margin-top: 10px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.countDown {
+    position: absolute;
+    opacity: 1;
+    height: 500px;
+    width: 500px;
+    color: white;
+    font-size: 500px;
+    text-align: center;
+    line-height: 500px;
+    visibility: hidden;
+    transition: opacity 1000ms;
+}
+
+.lostGame {
+    position: absolute;
+    opacity 0;
+    height: 500px;
+    width: 500px;
+    line-height: 500px;
+    color: darkred;
+    text-align: center;
+    font-size: 50px;
+    transition: opacity 500ms;
+}
