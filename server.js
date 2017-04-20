@@ -4,6 +4,8 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+
+// Chaque utilisateur se voit définir quatre contrôle haut, bas, droite et gauche. Dans la version en ligne cela n'a pas d'importance car chaque personne  a unclavier mais cela permet d'être modifié pour une version locale
 var users = [{
         id: ''
         , up: 'ArrowUp'
@@ -23,8 +25,10 @@ var users = [{
         , username: 'Player 2'
     }];
 var viewers = [];
+// On initialise les directions des deux snakes
 var dir = ['ArrowDown', 'ArrowUp'];
 var lastDir = ['ArrowDown', 'ArrowUp'];
+// On initialise le prochain mouvement effectué par chaque snake
 var nextMove = [{
     left: 0
     , top: 30
@@ -32,9 +36,13 @@ var nextMove = [{
     left: 490
     , top: 460
 }]
+// On initialise l'array permettant de vérifier que le mouvement suivant est valide
 var isNextMoveValid = [true, true];
+// On initialise l'array vérifiant si la position actuelle est un fruit
 var isFruit = [false, false];
+// Variable qui nous permettra de stocker le 'setInterval' qui gère le côté dynamique du snkae. Lui donner un nom nous permet de l'arrêter
 var interval = undefined;
+// On définit l'array contenant les positions intiales de chaque éléments des deux snakes
 var snake = [[{
     left: 0
     , top: 0
@@ -69,6 +77,7 @@ http.listen(PORT, function () {
 });
 io.on('connection', function (socket) {
     console.log(socket.id + ' connected');
+    // On assigne l'utilisateur connecté à un des deux postes si une place est libre
     var flag = false;
     for (var k = 0; k < 2; k++) {
         if (users[k].id == '') {
@@ -77,10 +86,12 @@ io.on('connection', function (socket) {
             break;
         }
     }
+    // Si les postes sont complets l'utilisateur sera spectateur
     if (!flag) {
         viewers.push(socket.id);
     }
     console.log(users);
+    // Lors de la déconnexion, si l'utilisateur était un joueur, on le retire de la liste des joueurs
     socket.on('disconnect', function () {
         console.log(socket.id + ' disconnected');
         for (var k = 0; k < 2; k++) {
@@ -93,6 +104,7 @@ io.on('connection', function (socket) {
     });
     var newFruit = function () {
         var flag = true;
+        // On prend des coordonnées aléatoires et on vérifie que ce ne sont pas des coordonnées d'un des deux snakes, si c'est le cas, on recommence. Quand cela est bon, on place un nouveau fruit
         while (flag) {
             fruit = {
                 left: Math.floor(Math.random() * 49) * 10
@@ -114,17 +126,21 @@ io.on('connection', function (socket) {
             data: fruit
         })
     }
+    // Cette fonction est appelé à chaque itération et vérifie si la case suivante présente une anomalie.
     var checkNext = function (lastEl, index) {
         if (lastEl.left == fruit.left && lastEl.top == fruit.top) {
             newFruit();
+            //Si la case suivante est un fruit, on émet l'événement 'lengthAdd' avec en donnée la longueur du nouveau snake et l'index (1 ou 2) qui correspond au numéro du joueur
             io.sockets.emit('lengthAdd', {
                 data: [snake[index].length, index]
             })
         }
         else {
+            // Si ce n'est pas un fruit on supprime le premier élément du snake
             snake[index].splice(0, 1);
         }
         for (var k = 0; k < 2; k++) {
+            // S'il y a collision, on attend deux secondes avant de réinitialiser le jeu, on affiche la mention 'Le joueur a perdu'. On vérifie d'abord juste pour la tête
             if (k != index && lastEl.top == snake[k][snake[k].length - 1].top && lastEl.left == snake[k][snake[k].length - 1].left) {
                 console.log(users[k].username + ' lost')
                 setTimeout(function () {
@@ -138,6 +154,7 @@ io.on('connection', function (socket) {
                 users[1].ready = false;
                 break;
             }
+            // On vérifie ensuite pour le reste du corps (les deux vérifications sont séparés car sinon on vérifie que la tête d'un snake n'est pas superposée à elle même ce qui arrête le jeu directement)
             for (var i = 0; i < snake[k].length - 1; i++) {
                 if (snake[k][i].top == lastEl.top && snake[k][i].left == lastEl.left) {
                     console.log(users[k].username + ' lost')
@@ -155,8 +172,11 @@ io.on('connection', function (socket) {
             }
         }
     }
+    // Cette fonction intialise la partie 
     var init = function () {
+        // On crée un setInterval afin de répéter toutes les n ms le même processus
         interval = setInterval(function () {
+            // Lorsqu'une touche est pressée (voir plus loin) les arrays dir et lastDir sont actualisés. Si la direction actuelle est haut et que la direction précédente n'est pas bas alors on fait avancer le snake
             for (var k = 0; k < 2; k++) {
                 if (dir[k] == users[k].up && lastDir[k] != users[k].down) {
                     lastDir[k] = users[k].up;
@@ -218,13 +238,16 @@ io.on('connection', function (socket) {
                         })
                     }
                 }
+                // Quand chaque coordonnées est mise à jour on effectue les vérifications
                 checkNext(snake[k][snake[k].length - 1], k)
             }
+            // A la fin on envoie l'événement 'moveOn' avec en données les coordonnées des snakes
             io.sockets.emit('moveOn', {
                 data: snake
             })
         }, 50)
     }
+    // 'designInit' permet d'initialiser le schema du jeu
     var designInit = function () {
         console.log('initialisation')
         snake = [[{
@@ -273,12 +296,13 @@ io.on('connection', function (socket) {
     }
     designInit();
     socket.on('keyPress', function (key) {
-        7
         for (var k = 0; k < 2; k++) {
+            // On vérifie que la touche pressée correspond à une touche de direction (on pourrait faire cette vérification côté client pour soulager le serveur)
             if (((key == 'ArrowUp' && lastDir[k] != 'ArrowDown') || (key == 'ArrowDown' && lastDir[k] != 'ArrowUp') || (key == 'ArrowLeft' && lastDir[k] != 'ArrowRight') || (key == 'ArrowRight' && lastDir[k] != 'ArrowLeft')) && socket.id == users[k].id) {
                 dir[k] = key;
             }
         }
+        // Si la page est réinitialisée on arrête la partie
         if (key == 'F5') {
             if (interval) {
                 clearInterval(interval);
@@ -292,6 +316,7 @@ io.on('connection', function (socket) {
         }
         designInit();
     })
+    // On actualise le statut 'ready' de l'utilisateur
     socket.on('ready', function () {
         for (var k = 0; k < 2; k++) {
             if (users[k].id == socket.id) {
